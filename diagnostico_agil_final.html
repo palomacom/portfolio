@@ -1,0 +1,670 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>Diagnóstico de Maturidade Ágil — TI Coamo</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#07090f;--bg2:#0d1117;--bg3:#131a24;--bg4:#192030;--bg5:#1f2840;
+  --bdr:rgba(255,255,255,.07);--bdr2:rgba(255,255,255,.13);
+  --tx:#dde4f2;--tx2:#8895b5;--tx3:#495570;
+  --blue:#5b8def;--teal:#2ec4b6;--green:#25b785;--amber:#f4a322;--red:#ef4b57;--purple:#9d7fef;--pink:#e879a0;--orange:#f87c3a;
+  --forte:#25b785;--mod:#f4a322;--crit:#ef4b57;
+  --r:10px;--rs:6px;--sb:220px;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{scroll-behavior:smooth;font-size:14px}
+body{font-family:'Inter',sans-serif;background:var(--bg);color:var(--tx);min-height:100vh;line-height:1.6}
+
+/* ─── SIDEBAR ─── */
+.sb{position:fixed;top:0;left:0;width:var(--sb);height:100vh;background:var(--bg2);border-right:1px solid var(--bdr);display:flex;flex-direction:column;z-index:200;overflow-y:auto;transition:width .2s}
+.sb-top{padding:20px 18px 16px;border-bottom:1px solid var(--bdr)}
+.sb-badge{display:inline-flex;align-items:center;gap:5px;background:rgba(91,141,239,.14);color:var(--blue);padding:3px 9px;border-radius:20px;font-size:10px;font-weight:700;letter-spacing:.06em;margin-bottom:8px}
+.sb-title{font-size:13px;font-weight:700;color:var(--tx);letter-spacing:-.02em}
+.sb-sub{font-size:11px;color:var(--tx3);margin-top:2px}
+.sb-nav{padding:10px 0;flex:1}
+.sb-sec{padding:8px 18px 3px;font-size:9px;font-weight:700;color:var(--tx3);letter-spacing:.1em;text-transform:uppercase}
+.sb-item{display:flex;align-items:center;gap:9px;padding:8px 18px;font-size:12.5px;color:var(--tx2);cursor:pointer;border-left:2px solid transparent;user-select:none;transition:all .14s}
+.sb-item:hover{color:var(--tx);background:rgba(255,255,255,.025)}
+.sb-item.on{color:var(--blue);background:rgba(91,141,239,.08);border-left-color:var(--blue);font-weight:500}
+.sb-icon{flex-shrink:0;width:15px;height:15px;opacity:.6}
+.sb-item.on .sb-icon{opacity:1}
+.sb-foot{padding:14px 18px;border-top:1px solid var(--bdr);font-size:11px;color:var(--tx3)}
+.sb-tag{display:inline-block;padding:2px 8px;border-radius:20px;font-size:10px;font-weight:600;margin-top:3px}
+.t-green{background:rgba(37,183,133,.12);color:var(--green)}
+.t-amber{background:rgba(244,163,34,.12);color:var(--amber)}
+
+/* ─── MAIN ─── */
+.main{margin-left:var(--sb);padding:28px 32px;min-height:100vh}
+.page{display:none}.page.on{display:block}
+.ph{margin-bottom:22px;padding-bottom:14px;border-bottom:1px solid var(--bdr)}
+.pt{font-size:22px;font-weight:700;letter-spacing:-.03em}
+.ps{font-size:12.5px;color:var(--tx2);margin-top:4px}
+
+/* ─── BANNERS ─── */
+.bnr{border-radius:var(--rs);padding:10px 14px;margin-bottom:18px;font-size:12px;border:1px solid}
+.bnr.prv{background:rgba(37,183,133,.06);border-color:rgba(37,183,133,.2);color:var(--green)}
+.bnr.inf{background:rgba(91,141,239,.06);border-color:rgba(91,141,239,.2);color:var(--blue)}
+.bnr.wrn{background:rgba(244,163,34,.06);border-color:rgba(244,163,34,.2);color:var(--amber)}
+
+/* ─── FILTRO ─── */
+.fil-wrap{background:var(--bg2);border:1px solid var(--bdr2);border-radius:var(--r);padding:14px 18px;margin-bottom:22px}
+.fil-title{font-size:11px;font-weight:700;color:var(--tx2);text-transform:uppercase;letter-spacing:.07em;margin-bottom:12px;display:flex;align-items:center;gap:7px}
+.fil-row{display:flex;gap:14px;flex-wrap:wrap;align-items:flex-end}
+.fil-group{display:flex;flex-direction:column;gap:5px}
+.fil-lbl{font-size:10px;font-weight:600;color:var(--tx3);text-transform:uppercase;letter-spacing:.07em}
+.fil-sel{background:var(--bg3);border:1px solid var(--bdr2);color:var(--tx);padding:6px 11px;border-radius:var(--rs);font-size:12px;cursor:pointer;font-family:'Inter',sans-serif;min-width:160px}
+.fil-sel:focus{outline:none;border-color:var(--blue)}
+.fil-btn{padding:7px 16px;border-radius:var(--rs);font-size:12px;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif;border:1px solid}
+.fil-btn.apply{background:rgba(91,141,239,.14);color:var(--blue);border-color:rgba(91,141,239,.3)}
+.fil-btn.apply:hover{background:rgba(91,141,239,.22)}
+.fil-btn.reset{background:var(--bg3);color:var(--tx2);border-color:var(--bdr2)}
+.fil-stat{font-size:12px;color:var(--tx3);padding:7px 0}
+.fil-tags{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px;min-height:22px}
+.fil-tag{display:inline-flex;align-items:center;gap:5px;background:rgba(91,141,239,.12);color:var(--blue);padding:2px 9px;border-radius:20px;font-size:11px;font-weight:500}
+.fil-tag span{cursor:pointer;opacity:.7}
+.fil-tag span:hover{opacity:1}
+
+/* ─── KPI ─── */
+.krow{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:11px;margin-bottom:22px}
+.kpi{background:var(--bg2);border:1px solid var(--bdr);border-radius:var(--r);padding:15px 17px;position:relative;overflow:hidden}
+.kpi::before{content:'';position:absolute;top:0;left:0;right:0;height:2px}
+.kpi.k-blue::before{background:var(--blue)}.kpi.k-green::before{background:var(--green)}.kpi.k-amber::before{background:var(--amber)}.kpi.k-red::before{background:var(--red)}.kpi.k-purple::before{background:var(--purple)}.kpi.k-teal::before{background:var(--teal)}
+.kl{font-size:10px;font-weight:600;color:var(--tx3);text-transform:uppercase;letter-spacing:.07em;margin-bottom:6px}
+.kv{font-size:24px;font-weight:700;font-family:'JetBrains Mono',monospace;letter-spacing:-.03em}
+.kv.c-green{color:var(--green)}.kv.c-amber{color:var(--amber)}.kv.c-red{color:var(--red)}.kv.c-blue{color:var(--blue)}
+.ks{font-size:11px;color:var(--tx3);margin-top:4px}
+
+/* ─── GRIDS ─── */
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px}
+.g3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px;margin-bottom:14px}
+.g21{display:grid;grid-template-columns:2fr 1fr;gap:14px;margin-bottom:14px}
+
+/* ─── CARD ─── */
+.card{background:var(--bg2);border:1px solid var(--bdr);border-radius:var(--r);padding:18px}
+.card.hl{border-color:var(--bdr2)}
+.ct{font-size:11px;font-weight:700;color:var(--tx3);text-transform:uppercase;letter-spacing:.07em;margin-bottom:13px;display:flex;align-items:center;gap:6px}
+.cdot{width:6px;height:6px;border-radius:50%;flex-shrink:0}
+
+/* ─── BLOCK SCORE GRID ─── */
+.bcg{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:8px;margin-bottom:18px}
+.bc{background:var(--bg3);border:1px solid var(--bdr);border-radius:var(--rs);padding:13px;cursor:default}
+.bc-n{font-size:10px;font-weight:600;color:var(--tx3);margin-bottom:5px}
+.bc-s{font-size:20px;font-weight:700;font-family:'JetBrains Mono',monospace}
+.bc-m{font-size:10px;color:var(--tx3);margin-top:4px;display:flex;align-items:center;gap:5px}
+.bc-bar{height:3px;border-radius:2px;background:var(--bg5);margin-top:6px;overflow:hidden}
+.bc-fill{height:100%;border-radius:2px}
+
+/* ─── BADGES ─── */
+.bdg{display:inline-flex;align-items:center;padding:2px 8px;border-radius:20px;font-size:10px;font-weight:600}
+.bdg.forte{background:rgba(37,183,133,.12);color:var(--green)}
+.bdg.mod{background:rgba(244,163,34,.12);color:var(--amber)}
+.bdg.crit{background:rgba(239,75,87,.12);color:var(--red)}
+
+/* ─── LEGEND ─── */
+.leg{display:flex;flex-wrap:wrap;gap:10px;margin-bottom:10px}
+.leg-i{display:flex;align-items:center;gap:4px;font-size:11px;color:var(--tx2)}
+.leg-sq{width:9px;height:9px;border-radius:2px;flex-shrink:0}
+
+/* ─── HEATMAP ─── */
+.hmw{overflow-x:auto;margin-top:6px}
+.hmt{border-collapse:collapse;font-size:10px;min-width:100%}
+.hmh{padding:4px 7px;text-align:center;color:var(--tx3);font-weight:700;white-space:nowrap;background:var(--bg3);font-size:9px;letter-spacing:.04em;text-transform:uppercase}
+.hmhr{padding:4px 10px;text-align:left;color:var(--tx);font-weight:600;white-space:nowrap;background:var(--bg3);font-size:11px;min-width:80px}
+.hmtd{padding:2px}
+.hmc{border-radius:4px;padding:3px 2px;text-align:center;font-family:'JetBrains Mono',monospace;font-size:10px;font-weight:500;color:#fff}
+
+/* ─── SIGNAL ─── */
+.sig{border-radius:var(--rs);padding:11px 14px;margin-bottom:8px;border-left:3px solid}
+.sig.red{background:rgba(239,75,87,.07);border-color:var(--red)}
+.sig.amber{background:rgba(244,163,34,.07);border-color:var(--amber)}
+.sig.green{background:rgba(37,183,133,.07);border-color:var(--green)}
+.sig.blue{background:rgba(91,141,239,.07);border-color:var(--blue)}
+.sig.purple{background:rgba(157,127,239,.07);border-color:var(--purple)}
+.sig-t{font-size:12px;font-weight:700;margin-bottom:3px}
+.sig.red .sig-t{color:var(--red)}.sig.amber .sig-t{color:var(--amber)}.sig.green .sig-t{color:var(--green)}.sig.blue .sig-t{color:var(--blue)}.sig.purple .sig-t{color:var(--purple)}
+.sig-d{font-size:11.5px;color:var(--tx2);line-height:1.5}
+
+/* ─── RANK ─── */
+.rlist{list-style:none}
+.ri{display:flex;align-items:center;justify-content:space-between;padding:8px 11px;border-radius:var(--rs);margin-bottom:5px;background:var(--bg3)}
+.rn{font-size:12.5px;font-weight:500}.rscore{font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:700}
+
+/* ─── GAP GRID ─── */
+.gg{display:grid;grid-template-columns:repeat(auto-fit,minmax(112px,1fr));gap:7px;margin-bottom:12px}
+.gc{border-radius:var(--rs);padding:11px}
+.gl{font-size:10px;color:var(--tx3);margin-bottom:3px}
+.gv{font-size:16px;font-weight:700;font-family:'JetBrains Mono',monospace}
+.gn{font-size:9px;margin-top:2px}
+
+/* ─── INSIGHT LIST ─── */
+.ilist{list-style:none}
+.ii{display:flex;gap:9px;padding:9px 0;border-bottom:1px solid var(--bdr);align-items:flex-start}
+.ii:last-child{border:none;padding-bottom:0}
+.inum{font-size:10px;font-weight:700;font-family:'JetBrains Mono',monospace;color:var(--tx3);flex-shrink:0;min-width:20px;padding-top:1px}
+.itxt{font-size:12.5px;color:var(--tx);line-height:1.5}
+
+/* ─── OPEN Q ─── */
+.oq-bar{height:4px;border-radius:2px;background:var(--bg5);margin-top:4px;overflow:hidden}
+.oq-fill{height:100%;border-radius:2px;transition:width .5s ease}
+.oq-sample{background:var(--bg3);border-left:3px solid var(--bdr2);padding:8px 12px;border-radius:0 var(--rs) var(--rs) 0;font-size:11.5px;color:var(--tx2);font-style:italic;margin-bottom:6px;line-height:1.5}
+
+/* ─── PRIORITY TABLE ─── */
+.ptbl{width:100%;border-collapse:collapse}
+.ptbl th{text-align:left;padding:8px 11px;font-size:10px;font-weight:700;color:var(--tx3);text-transform:uppercase;letter-spacing:.06em;background:var(--bg3);border-bottom:1px solid var(--bdr)}
+.ptbl td{padding:9px 11px;font-size:12.5px;border-bottom:1px solid var(--bdr)}
+.ptbl tr:last-child td{border:none}
+.ptbl tr:hover td{background:rgba(255,255,255,.015)}
+
+/* ─── MISC ─── */
+.cw{position:relative;width:100%}
+.divider{height:1px;background:var(--bdr);margin:16px 0}
+::-webkit-scrollbar{width:4px;height:4px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:var(--bg5);border-radius:2px}
+
+@media(max-width:860px){
+  :root{--sb:52px}
+  .sb-top,.sb-sec,.sb-item span,.sb-foot{display:none}
+  .sb-item{justify-content:center;padding:11px}
+  .main{padding:16px}
+  .g2,.g3,.g21{grid-template-columns:1fr}
+}
+</style>
+</head>
+<body>
+
+<!-- ═══════════ SIDEBAR ═══════════ -->
+<nav class="sb">
+  <div class="sb-top">
+    <div class="sb-badge">▲ Diagnóstico</div>
+    <div class="sb-title">Maturidade Ágil</div>
+    <div class="sb-sub">TI Coamo · Onda Maio/2026</div>
+  </div>
+  <div class="sb-nav">
+    <div class="sb-sec">Análise</div>
+    <div class="sb-item on" onclick="go('ov',this)">
+      <svg class="sb-icon" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+      <span>Visão Consolidada</span>
+    </div>
+    <div class="sb-item" onclick="go('drill',this)">
+      <svg class="sb-icon" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+      <span>Drill-down Perguntas</span>
+    </div>
+    <div class="sb-item" onclick="go('li',this)">
+      <svg class="sb-icon" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+      <span>Por Linha</span>
+    </div>
+    <div class="sb-item" onclick="go('ro',this)">
+      <svg class="sb-icon" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M20 21a8 8 0 1 0-16 0"/></svg>
+      <span>Por Papel</span>
+    </div>
+    <div class="sb-sec">Estratégico</div>
+    <div class="sb-item" onclick="go('rd',this)">
+      <svg class="sb-icon" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polygon points="12 2 22 8.5 22 15.5 12 22 2 15.5 2 8.5"/><line x1="12" y1="2" x2="12" y2="22"/><line x1="2" y1="8.5" x2="22" y2="8.5"/></svg>
+      <span>Radar</span>
+    </div>
+    <div class="sb-item" onclick="go('rx',this)">
+      <svg class="sb-icon" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>
+      <span>Matriz de Risco</span>
+    </div>
+    <div class="sb-item" onclick="go('oq',this)">
+      <svg class="sb-icon" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+      <span>Análise Qualitativa</span>
+    </div>
+    <div class="sb-item" onclick="go('ins',this)">
+      <svg class="sb-icon" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>
+      <span>Insights & Padrões</span>
+    </div>
+  </div>
+  <div class="sb-foot">
+    <div>179 respondentes</div>
+    <div class="sb-tag t-green">Bloco 9 normalizado ✓</div>
+    <div class="sb-tag t-amber">Dados anonimizados ✓</div>
+  </div>
+</nav>
+
+<!-- ═══════════ MAIN ═══════════ -->
+<main class="main">
+
+<!-- ══ VISÃO CONSOLIDADA ══ -->
+<div id="page-ov" class="page on">
+  <div class="ph">
+    <div class="pt">Visão Consolidada — Diagnóstico Ágil</div>
+    <div class="ps">Escala 1–5 · Bloco 9 (Sustentabilidade) invertido e normalizado via 6−v · Onda única: maio/2026</div>
+  </div>
+  <div class="bnr prv">🔒 Análise 100% anonimizada — nenhum dado pessoal (nome, e-mail) é exibido ou processado.</div>
+
+  <!-- FILTRO PROTAGONISTA -->
+  <div class="fil-wrap">
+    <div class="fil-title">
+      <svg width="13" height="13" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>
+      Filtros — recalcula todos os indicadores dinamicamente
+    </div>
+    <div class="fil-row">
+      <div class="fil-group">
+        <span class="fil-lbl">Linha de Atendimento</span>
+        <select class="fil-sel" id="f-line"><option value="">Todas as linhas</option></select>
+      </div>
+      <div class="fil-group">
+        <span class="fil-lbl">Papel</span>
+        <select class="fil-sel" id="f-role"><option value="">Todos os papéis</option></select>
+      </div>
+      <div class="fil-group">
+        <span class="fil-lbl">Área</span>
+        <select class="fil-sel" id="f-area"><option value="">Todas as áreas</option><option value="BI">BI</option><option value="Transacional">Transacional</option></select>
+      </div>
+      <button class="fil-btn apply" onclick="applyFil()">▶ Aplicar filtros</button>
+      <button class="fil-btn reset" onclick="resetFil()">✕ Limpar</button>
+      <span class="fil-stat" id="f-stat"></span>
+    </div>
+    <div class="fil-tags" id="f-tags"></div>
+  </div>
+
+  <div class="krow" id="krow-ov"></div>
+  <div class="bcg" id="bcg-ov"></div>
+
+  <div class="g2">
+    <div class="card">
+      <div class="ct"><span class="cdot" style="background:var(--blue)"></span>Score médio por bloco</div>
+      <div class="cw" style="height:250px"><canvas id="c-avg"></canvas></div>
+    </div>
+    <div class="card">
+      <div class="ct"><span class="cdot" style="background:var(--teal)"></span>Distribuição Likert % por bloco</div>
+      <div class="leg">
+        <span class="leg-i"><span class="leg-sq" style="background:var(--red)"></span>Discordo tot.</span>
+        <span class="leg-i"><span class="leg-sq" style="background:var(--orange)"></span>Discordo parc.</span>
+        <span class="leg-i"><span class="leg-sq" style="background:#64748b"></span>Neutro</span>
+        <span class="leg-i"><span class="leg-sq" style="background:var(--blue)"></span>Concordo parc.</span>
+        <span class="leg-i"><span class="leg-sq" style="background:var(--green)"></span>Concordo tot.</span>
+      </div>
+      <div class="cw" style="height:215px"><canvas id="c-stk"></canvas></div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ DRILL-DOWN ══ -->
+<div id="page-drill" class="page">
+  <div class="ph"><div class="pt">Drill-down por Pergunta</div><div class="ps">44 questões ranqueadas · blocos 3–9 · Bloco 9 (↓) normalizado</div></div>
+  <div class="g2">
+    <div class="card hl"><div class="ct"><span class="cdot" style="background:var(--red)"></span>Top 5 gargalos críticos</div><ul class="rlist" id="d-crit"></ul></div>
+    <div class="card hl"><div class="ct"><span class="cdot" style="background:var(--green)"></span>Top 5 pontos fortes</div><ul class="rlist" id="d-strong"></ul></div>
+  </div>
+  <div class="card">
+    <div class="ct"><span class="cdot" style="background:var(--purple)"></span>Todas as perguntas — score médio</div>
+    <div class="leg" id="d-leg"></div>
+    <div class="cw" style="height:1060px"><canvas id="c-drill"></canvas></div>
+  </div>
+</div>
+
+<!-- ══ LINHAS ══ -->
+<div id="page-li" class="page">
+  <div class="ph"><div class="pt">Análise por Linha de Atendimento</div><div class="ps">28 linhas · Score global inclui Bloco 9 normalizado</div></div>
+  <div class="g21">
+    <div class="card">
+      <div class="ct"><span class="cdot" style="background:var(--blue)"></span>Ranking de maturidade (maior → menor)</div>
+      <div class="cw" style="height:680px"><canvas id="c-li"></canvas></div>
+    </div>
+    <div>
+      <div class="card" style="margin-bottom:12px"><div class="ct"><span class="cdot" style="background:var(--green)"></span>Top 3 mais maduras</div><ul class="rlist" id="li-best"></ul></div>
+      <div class="card" style="margin-bottom:12px"><div class="ct"><span class="cdot" style="background:var(--red)"></span>Top 3 atenção prioritária</div><ul class="rlist" id="li-worst"></ul></div>
+      <div class="card"><div class="ct"><span class="cdot" style="background:var(--amber)"></span>Respondentes (top 10)</div><div class="cw" style="height:195px"><canvas id="c-lct"></canvas></div></div>
+    </div>
+  </div>
+  <div class="card">
+    <div class="ct"><span class="cdot" style="background:var(--teal)"></span>Heatmap — Linhas × Blocos</div>
+    <div class="leg">
+      <span class="leg-i"><span class="leg-sq" style="background:#15803d"></span>≥ 4.5</span>
+      <span class="leg-i"><span class="leg-sq" style="background:#4ade80"></span>4.2 – 4.5</span>
+      <span class="leg-i"><span class="leg-sq" style="background:#eab308"></span>3.8 – 4.2</span>
+      <span class="leg-i"><span class="leg-sq" style="background:#f97316"></span>3.4 – 3.8</span>
+      <span class="leg-i"><span class="leg-sq" style="background:#ef4444"></span>< 3.4</span>
+    </div>
+    <div class="hmw" id="li-hm"></div>
+    <div style="font-size:10px;color:var(--tx3);margin-top:6px">★ Sustentabilidade = Bloco 9 com escala invertida e normalizada (6−v). Scores altos indicam baixo risco de regressão.</div>
+  </div>
+</div>
+
+<!-- ══ PAPÉIS ══ -->
+<div id="page-ro" class="page">
+  <div class="ph"><div class="pt">Análise por Papel</div><div class="ps">Comparativo entre Dev/Líder Técnico, Líder de Linha, PO Adjunto e Facilitador Ágil</div></div>
+  <div class="g2">
+    <div class="card">
+      <div class="ct"><span class="cdot" style="background:var(--blue)"></span>Score por papel e bloco</div>
+      <div class="leg" id="ro-leg"></div>
+      <div class="cw" style="height:270px"><canvas id="c-ro"></canvas></div>
+    </div>
+    <div class="card">
+      <div class="ct"><span class="cdot" style="background:var(--amber)"></span>Respondentes por papel</div>
+      <div class="cw" style="height:185px"><canvas id="c-rct"></canvas></div>
+      <div class="divider"></div>
+      <div class="ct"><span class="cdot" style="background:var(--teal)"></span>Score global por papel</div>
+      <div id="ro-scores"></div>
+    </div>
+  </div>
+  <div class="card">
+    <div class="ct"><span class="cdot" style="background:var(--red)"></span>Desalinhamento de percepção — Líder de Linha vs Desenvolvedor</div>
+    <div style="font-size:11.5px;color:var(--tx3);margin-bottom:12px">Diferença positiva = Líder mais otimista (risco de gestão desconectada). Negativa = Operação avalia melhor. ≥ 0.5 em destaque.</div>
+    <div class="gg" id="ro-gap"></div>
+  </div>
+</div>
+
+<!-- ══ RADAR ══ -->
+<div id="page-rd" class="page">
+  <div class="ph"><div class="pt">Radar de Maturidade</div><div class="ps">7 dimensões — Sustentabilidade normalizada (5 = resiliente / 1 = alto risco)</div></div>
+  <div class="g2">
+    <div class="card"><div class="ct"><span class="cdot" style="background:var(--blue)"></span>Radar global — todas as linhas</div><div class="cw" style="height:340px"><canvas id="c-rd1"></canvas></div></div>
+    <div class="card"><div class="ct"><span class="cdot" style="background:var(--teal)"></span>Radar por papel</div><div class="leg" id="rd-leg"></div><div class="cw" style="height:320px"><canvas id="c-rd2"></canvas></div></div>
+  </div>
+</div>
+
+<!-- ══ RISCO ══ -->
+<div id="page-rx" class="page">
+  <div class="ph"><div class="pt">Matriz de Risco Sistêmico</div><div class="ps">Maturidade × Impacto · Tamanho da bolha = dispersão (σ) · Quadrante inferior esquerdo = prioridade máxima</div></div>
+  <div class="card" style="margin-bottom:14px"><div class="cw" style="height:400px"><canvas id="c-rx"></canvas></div></div>
+  <div class="g2">
+    <div id="rx-sigs"></div>
+    <div class="card">
+      <div class="ct"><span class="cdot" style="background:var(--green)"></span>Top 3 linhas mais maduras</div>
+      <ul class="rlist" id="rx-best"></ul>
+      <div class="divider"></div>
+      <div class="ct"><span class="cdot" style="background:var(--red)"></span>Top 3 atenção prioritária</div>
+      <ul class="rlist" id="rx-worst"></ul>
+    </div>
+  </div>
+</div>
+
+<!-- ══ QUALITATIVO ══ -->
+<div id="page-oq" class="page">
+  <div class="ph"><div class="pt">Análise Qualitativa — Perguntas Abertas</div><div class="ps">Agrupamento semântico de 4 questões abertas — temas, frequência e exemplos anônimos</div></div>
+  <div class="bnr prv">🔒 Respostas exibidas apenas como exemplos anonimizados. Nenhum respondente é identificável.</div>
+  <div id="oq-wrap"></div>
+</div>
+
+<!-- ══ INSIGHTS ══ -->
+<div id="page-ins" class="page">
+  <div class="ph"><div class="pt">Insights Estratégicos & Padrões</div><div class="ps">Diagnóstico organizacional interno — 13 passos · 179 respondentes · Onda maio/2026</div></div>
+  <div class="g2">
+    <div class="card"><div class="ct"><span class="cdot" style="background:var(--blue)"></span>Top 5 Insights</div><ul class="ilist" id="ins-i"></ul></div>
+    <div class="card"><div class="ct"><span class="cdot" style="background:var(--red)"></span>Top 5 Riscos</div><ul class="ilist" id="ins-r"></ul></div>
+  </div>
+  <div class="g2">
+    <div class="card"><div class="ct"><span class="cdot" style="background:var(--green)"></span>Top 5 Oportunidades</div><ul class="ilist" id="ins-o"></ul></div>
+    <div class="card">
+      <div class="ct"><span class="cdot" style="background:var(--amber)"></span>Ranking de Prioridade</div>
+      <table class="ptbl"><thead><tr><th>#</th><th>Ação</th><th>Urgência</th></tr></thead><tbody id="ins-pt"></tbody></table>
+    </div>
+  </div>
+  <div class="card">
+    <div class="ct"><span class="cdot" style="background:var(--purple)"></span>Interpretação Avançada — Padrões Detectados</div>
+    <div id="ins-pat"></div>
+  </div>
+</div>
+
+</main>
+
+<script>
+// ═══════════════════════════════════════════
+// DADOS COMPLETOS — Bloco 9 normalizado (6−v)
+// Privacidade: sem nome/email
+// ═══════════════════════════════════════════
+const D={"total":179,"block_names":["Fluxo","Cerimônias","Métricas","Classes de Serviço","Governança","Valor","Sustentabilidade"],"block_stats":{"Fluxo":{"mean":4.248,"std":0.911,"dist":{"dt":0.8,"dp":5.3,"n":11.6,"cp":33.0,"ct":49.3}},"Cerimônias":{"mean":4.25,"std":0.972,"dist":{"dt":1.9,"dp":4.7,"n":12.1,"cp":28.9,"ct":52.4}},"Métricas":{"mean":4.034,"std":1.016,"dist":{"dt":2.6,"dp":5.0,"n":19.2,"cp":32.7,"ct":40.5}},"Classes de Serviço":{"mean":3.826,"std":1.106,"dist":{"dt":4.4,"dp":5.8,"n":27.5,"cp":27.4,"ct":34.9}},"Governança":{"mean":4.292,"std":0.882,"dist":{"dt":1.5,"dp":2.9,"n":10.7,"cp":34.5,"ct":50.3}},"Valor":{"mean":4.27,"std":0.905,"dist":{"dt":1.2,"dp":3.2,"n":14.3,"cp":30.1,"ct":51.3}},"Sustentabilidade":{"mean":3.055,"std":1.251,"dist":{"dt":12.8,"dp":22.3,"n":26.7,"cp":23.3,"ct":15.0}}},"line_block":{"ACONT":{"Fluxo":4.641,"Cerimônias":4.696,"Métricas":4.708,"Classes de Serviço":4.542,"Governança":4.83,"Valor":4.821,"Sustentabilidade":3.562},"ADMIN":{"Fluxo":4.482,"Cerimônias":4.458,"Métricas":4.19,"Classes de Serviço":3.833,"Governança":4.548,"Valor":4.082,"Sustentabilidade":3.429},"ALIMLOG":{"Fluxo":4.477,"Cerimônias":4.364,"Métricas":4.439,"Classes de Serviço":4.379,"Governança":4.439,"Valor":4.377,"Sustentabilidade":2.75},"ASTEC":{"Fluxo":4.088,"Cerimônias":4.407,"Métricas":3.667,"Classes de Serviço":3.862,"Governança":4.25,"Valor":4.088,"Sustentabilidade":3.056},"BIAC":{"Fluxo":4.613,"Cerimônias":4.571,"Métricas":4.75,"Classes de Serviço":4.875,"Governança":4.792,"Valor":4.704,"Sustentabilidade":4.562},"BIALIM":{"Fluxo":5.0,"Cerimônias":4.714,"Métricas":5.0,"Classes de Serviço":4.917,"Governança":4.917,"Valor":5.0,"Sustentabilidade":4.0},"BIBF":{"Fluxo":4.641,"Cerimônias":4.857,"Métricas":4.633,"Classes de Serviço":3.917,"Governança":4.833,"Valor":4.914,"Sustentabilidade":3.05},"BICM":{"Fluxo":4.273,"Cerimônias":4.429,"Métricas":4.278,"Classes de Serviço":4.353,"Governança":4.5,"Valor":4.429,"Sustentabilidade":3.917},"BIFNC":{"Fluxo":4.15,"Cerimônias":4.421,"Métricas":4.278,"Classes de Serviço":3.286,"Governança":4.944,"Valor":4.571,"Sustentabilidade":3.5},"BIGP":{"Fluxo":5.0,"Cerimônias":5.0,"Métricas":5.0,"Classes de Serviço":5.0,"Governança":5.0,"Valor":4.571,"Sustentabilidade":3.0},"BIIND":{"Fluxo":4.174,"Cerimônias":4.4,"Métricas":4.167,"Classes de Serviço":3.647,"Governança":4.5,"Valor":4.619,"Sustentabilidade":2.5},"BILOG":{"Fluxo":4.194,"Cerimônias":3.903,"Métricas":3.862,"Classes de Serviço":3.76,"Governança":4.259,"Valor":4.143,"Sustentabilidade":3.0},"BITR":{"Fluxo":3.312,"Cerimônias":3.429,"Métricas":4.083,"Classes de Serviço":3.636,"Governança":4.25,"Valor":4.286,"Sustentabilidade":2.25},"CADPROD":{"Fluxo":3.938,"Cerimônias":3.464,"Métricas":3.167,"Classes de Serviço":4.111,"Governança":3.917,"Valor":3.964,"Sustentabilidade":3.188},"COFT":{"Fluxo":4.368,"Cerimônias":4.206,"Métricas":3.981,"Classes de Serviço":3.0,"Governança":4.296,"Valor":4.167,"Sustentabilidade":3.657},"COMLOG":{"Fluxo":3.918,"Cerimônias":4.29,"Métricas":3.712,"Classes de Serviço":3.407,"Governança":4.067,"Valor":4.271,"Sustentabilidade":2.775},"COMPSUP":{"Fluxo":4.225,"Cerimônias":4.4,"Métricas":4.133,"Classes de Serviço":3.3,"Governança":4.233,"Valor":4.486,"Sustentabilidade":3.65},"CONTFIS":{"Fluxo":4.0,"Cerimônias":3.792,"Métricas":3.81,"Classes de Serviço":3.595,"Governança":3.643,"Valor":4.224,"Sustentabilidade":2.929},"ENGMAN":{"Fluxo":4.438,"Cerimônias":4.595,"Métricas":4.5,"Classes de Serviço":4.25,"Governança":4.333,"Valor":4.524,"Sustentabilidade":3.292},"FATBF":{"Fluxo":4.861,"Cerimônias":4.587,"Métricas":4.444,"Classes de Serviço":4.204,"Governança":4.611,"Valor":4.603,"Sustentabilidade":3.611},"FINANC":{"Fluxo":4.278,"Cerimônias":4.062,"Métricas":4.048,"Classes de Serviço":3.531,"Governança":4.146,"Valor":4.082,"Sustentabilidade":2.667},"FORNBF":{"Fluxo":4.042,"Cerimônias":4.127,"Métricas":4.074,"Classes de Serviço":3.685,"Governança":4.259,"Valor":4.27,"Sustentabilidade":3.056},"GTI -ADM":{"Fluxo":4.5,"Cerimônias":4.857,"Métricas":4.667,"Classes de Serviço":3.833,"Governança":4.333,"Valor":4.857,"Sustentabilidade":4.0},"INDTR":{"Fluxo":4.375,"Cerimônias":4.629,"Métricas":3.769,"Classes de Serviço":4.069,"Governança":4.6,"Valor":4.2,"Sustentabilidade":2.5},"LOGBF":{"Fluxo":4.167,"Cerimônias":4.036,"Métricas":4.222,"Classes de Serviço":3.764,"Governança":4.444,"Valor":4.071,"Sustentabilidade":2.333},"PDCOOP":{"Fluxo":3.708,"Cerimônias":3.925,"Métricas":3.333,"Classes de Serviço":3.139,"Governança":3.667,"Valor":3.429,"Sustentabilidade":2.917},"STES":{"Fluxo":4.154,"Cerimônias":3.971,"Métricas":3.929,"Classes de Serviço":3.75,"Governança":4.033,"Valor":4.147,"Sustentabilidade":2.5},"TRSPTE":{"Fluxo":3.882,"Cerimônias":3.478,"Métricas":2.765,"Classes de Serviço":3.113,"Governança":3.429,"Valor":3.897,"Sustentabilidade":2.41}},"line_overall":{"ACONT":4.601,"ADMIN":4.199,"ALIMLOG":4.262,"ASTEC":3.995,"BIAC":4.695,"BIALIM":4.839,"BIBF":4.516,"BICM":4.333,"BIFNC":4.296,"BIGP":4.75,"BIIND":4.101,"BILOG":3.931,"BITR":3.667,"CADPROD":3.7,"COFT":4.027,"COMLOG":3.856,"COMPSUP":4.105,"CONTFIS":3.775,"ENGMAN":4.341,"FATBF":4.482,"FINANC":3.928,"FORNBF":3.987,"GTI -ADM":4.477,"INDTR":4.13,"LOGBF":3.955,"PDCOOP":3.489,"STES":3.869,"TRSPTE":3.378},"line_counts":{"ASTEC":20,"LOGBF":12,"ALIMLOG":11,"COMLOG":10,"TRSPTE":10,"FORNBF":9,"COFT":9,"FATBF":9,"ACONT":8,"ADMIN":7,"FINANC":7,"CONTFIS":7,"PDCOOP":6,"ENGMAN":6,"BILOG":5,"BIBF":5,"COMPSUP":5,"INDTR":5,"STES":5,"CADPROD":4,"BIAC":4,"BIIND":3,"BIFNC":3,"BICM":3,"BITR":2,"BIALIM":2,"BIGP":1,"GTI -ADM":1},"role_block":{"Desenvolvedor de Sistemas / BI ou Líder Técnico":{"Fluxo":4.207,"Cerimônias":4.218,"Métricas":4.01,"Classes de Serviço":3.775,"Governança":4.284,"Valor":4.252,"Sustentabilidade":3.0},"Facilitador Ágil":{"Fluxo":4.625,"Cerimônias":4.571,"Métricas":4.611,"Classes de Serviço":4.111,"Governança":4.722,"Valor":4.524,"Sustentabilidade":3.833},"Líder de Linha":{"Fluxo":4.481,"Cerimônias":4.406,"Métricas":4.137,"Classes de Serviço":3.992,"Governança":4.39,"Valor":4.343,"Sustentabilidade":3.291},"PO Adjunto":{"Fluxo":4.255,"Cerimônias":4.284,"Métricas":4.0,"Classes de Serviço":4.014,"Governança":4.146,"Valor":4.287,"Sustentabilidade":3.109}},"role_overall":{"Desenvolvedor de Sistemas / BI ou Líder Técnico":4.034,"Facilitador Ágil":4.47,"Líder de Linha":4.212,"PO Adjunto":4.078},"role_counts":{"Desenvolvedor de Sistemas / BI ou Líder Técnico":142,"Líder de Linha":20,"PO Adjunto":14,"Facilitador Ágil":3},"area_block":{"BI":{"Fluxo":4.367,"Cerimônias":4.423,"Métricas":4.399,"Classes de Serviço":4.134,"Governança":4.632,"Valor":4.584,"Sustentabilidade":3.371},"Transacional":{"Fluxo":4.226,"Cerimônias":4.217,"Métricas":3.96,"Classes de Serviço":3.77,"Governança":4.227,"Valor":4.208,"Sustentabilidade":2.993}},"area_overall":{"BI":4.331,"Transacional":4.014},"area_counts":{"Transacional":150,"BI":29},"roles":["Desenvolvedor de Sistemas / BI ou Líder Técnico","Facilitador Ágil","Líder de Linha","PO Adjunto"],"lines":["ACONT","ADMIN","ALIMLOG","ASTEC","BIAC","BIALIM","BIBF","BICM","BIFNC","BIGP","BIIND","BILOG","BITR","CADPROD","COFT","COMLOG","COMPSUP","CONTFIS","ENGMAN","FATBF","FINANC","FORNBF","GTI -ADM","INDTR","LOGBF","PDCOOP","STES","TRSPTE"],"q_short":["Fluxo claro (Up/Downstream)","Intenção vs compromisso","Tipos de item utilizados","Critérios entrada (DoR)","Critérios conclusão (DoD)","Fluxo reflete realidade","T-shirt size colaborativo","Estimativa de esforço","Daily consistente","Recarga de itens","Retrospectiva gera melhoria","Cerimônias reduzem improviso","Cadências com objetivo claro","Refinamento ocorre","Políticas/Acordos efetivos","Métricas de fluxo utilizadas","Dashboards compreendidos","Decisões usam dados reais","Métricas antecipam riscos","Métricas melhoram previsib.","Limite de WIP praticado","Sei diferenciar Cl. Serviço","Expedite consciente","Data fixa trat. diferenciado","Cl. Serviço reduz conflitos","Cl. Serviço melhora backlog","Impacto Cl. Serviço no WIP","Papéis/Responsab. compreend.","Decisões nas cadências","Problemas em fóruns certos","Liderança usa métricas","Liderança gerencia conflitos","Rotinas claras no sistema","Ambiente seguro","Framework trouxe benefícios","Previsibilidade melhorou","Priorizar backlog ficou claro","Decisões alinhadas negócio","Vejo valor no modelo","Modelo tem pontos evolução","↓Baixo risco: abandono métricas","↓Baixo risco: excesso urgências","↓Baixo risco: enfraq. cadências","↓Baixo depend. pessoas espec."],"q_block_map":["Fluxo","Fluxo","Fluxo","Fluxo","Fluxo","Fluxo","Fluxo","Fluxo","Cerimônias","Cerimônias","Cerimônias","Cerimônias","Cerimônias","Cerimônias","Cerimônias","Métricas","Métricas","Métricas","Métricas","Métricas","Métricas","Classes de Serviço","Classes de Serviço","Classes de Serviço","Classes de Serviço","Classes de Serviço","Classes de Serviço","Governança","Governança","Governança","Governança","Governança","Governança","Valor","Valor","Valor","Valor","Valor","Valor","Valor","Sustentabilidade","Sustentabilidade","Sustentabilidade","Sustentabilidade"],"q_means":[4.798,4.089,4.366,4.154,4.239,4.258,3.939,4.105,4.849,3.953,3.894,4.287,4.011,4.345,4.38,3.935,4.171,4.197,4.058,3.959,3.876,3.825,3.775,4.313,3.769,3.706,3.547,4.497,4.22,4.0,4.286,4.43,4.311,4.542,4.199,4.029,4.22,4.16,4.299,4.429,3.284,3.159,3.28,2.506],"line_role":{"ACONT":{"Desenvolvedor de Sistemas / BI ou Líder Técnico":4.648,"Facilitador Ágil":4.591,"Líder de Linha":4.477,"PO Adjunto":4.5},"ADMIN":{"Desenvolvedor de Sistemas / BI ou Líder Técnico":4.205,"Facilitador Ágil":null,"Líder de Linha":4.409,"PO Adjunto":3.955},"ALIMLOG":{"Desenvolvedor de Sistemas / BI ou Líder Técnico":4.273,"Facilitador Ágil":null,"Líder de Linha":4.0,"PO Adjunto":4.432},"ASTEC":{"Desenvolvedor de Sistemas / BI ou Líder Técnico":4.022,"Facilitador Ágil":null,"Líder de Linha":null,"PO Adjunto":3.808},"BIAC":{"Desenvolvedor de Sistemas / BI ou Líder Técnico":4.685,"Facilitador Ágil":null,"Líder de Linha":4.727,"PO Adjunto":null},"BIALIM":{"Desenvolvedor de Sistemas / BI ou Líder Técnico":4.682,"Facilitador Ágil":null,"Líder de Linha":5.0,"PO Adjunto":null},"BIBF":{"Desenvolvedor de Sistemas / BI ou Líder Técnico":4.527,"Facilitador Ágil":null,"Líder de Linha":4.477,"PO Adjunto":null},"BICM":{"Desenvolvedor de Sistemas / BI ou Líder Técnico":4.432,"Facilitador Ágil":null,"Líder de Linha":4.122,"PO Adjunto":null},"BIFNC":{"Desenvolvedor de Sistemas / BI ou Líder Técnico":4.296,"Facilitador Ágil":null,"Líder de Linha":null,"PO Adjunto":null},"BIGP":{"Desenvolvedor de Sistemas / BI ou Líder Técnico":4.75,"Facilitador Ágil":null,"Líder de Linha":null,"PO Adjunto":null},"BIIND":{"Desenvolvedor de Sistemas / BI ou Líder Técnico":3.859,"Facilitador Ágil":null,"Líder de Linha":4.568,"PO Adjunto":null},"BILOG":{"Desenvolvedor de Sistemas / BI ou Líder Técnico":4.025,"Facilitador Ágil":null,"Líder de Linha":3.591,"PO Adjunto":null},"BITR":{"Desenvolvedor de Sistemas / BI ou Líder Técnico":3.667,"Facilitador Ágil":null,"Líder de Linha":null,"PO Adjunto":null},"CADPROD":{"Desenvolvedor de Sistemas / BI ou Líder Técnico":3.524,"Facilitador Ágil":null,"Líder de Linha":4.205,"PO Adjunto":null},"COFT":{"Desenvolvedor de Sistemas / BI ou Líder Técnico":4.038,"Facilitador Ágil":null,"Líder de Linha":3.909,"PO Adjunto":4.068},"COMLOG":{"Desenvolvedor de Sistemas / BI ou Líder Técnico":3.801,"Facilitador Ágil":null,"Líder de Linha":4.341,"PO Adjunto":null},"COMPSUP":{"Desenvolvedor de Sistemas / BI ou Líder Técnico":4.105,"Facilitador Ágil":null,"Líder de Linha":null,"PO Adjunto":null},"CONTFIS":{"Desenvolvedor de Sistemas / BI ou Líder Técnico":3.628,"Facilitador Ágil":null,"Líder de Linha":3.727,"PO Adjunto":4.545},"ENGMAN":{"Desenvolvedor de Sistemas / BI ou Líder Técnico":4.323,"Facilitador Ágil":null,"Líder de Linha":4.432,"PO Adjunto":null},"FATBF":{"Desenvolvedor de Sistemas / BI ou Líder Técnico":4.62,"Facilitador Ágil":4.182,"Líder de Linha":3.818,"PO Adjunto":null},"FINANC":{"Desenvolvedor de Sistemas / BI ou Líder Técnico":3.917,"Facilitador Ágil":null,"Líder de Linha":4.114,"PO Adjunto":3.795},"FORNBF":{"Desenvolvedor de Sistemas / BI ou Líder Técnico":3.826,"Facilitador Ágil":4.636,"Líder de Linha":4.136,"PO Adjunto":4.159},"GTI -ADM":{"Desenvolvedor de Sistemas / BI ou Líder Técnico":4.477,"Facilitador Ágil":null,"Líder de Linha":null,"PO Adjunto":null},"INDTR":{"Desenvolvedor de Sistemas / BI ou Líder Técnico":4.13,"Facilitador Ágil":null,"Líder de Linha":null,"PO Adjunto":null},"LOGBF":{"Desenvolvedor de Sistemas / BI ou Líder Técnico":3.922,"Facilitador Ágil":null,"Líder de Linha":3.909,"PO Adjunto":4.125},"PDCOOP":{"Desenvolvedor de Sistemas / BI ou Líder Técnico":3.42,"Facilitador Ágil":null,"Líder de Linha":null,"PO Adjunto":3.837},"STES":{"Desenvolvedor de Sistemas / BI ou Líder Técnico":3.629,"Facilitador Ágil":null,"Líder de Linha":4.568,"PO Adjunto":3.895},"TRSPTE":{"Desenvolvedor de Sistemas / BI ou Líder Técnico":3.363,"Facilitador Ágil":null,"Líder de Linha":3.545,"PO Adjunto":null}},"open_q":{"Geração de valor":{"themes":{"Fluxo/Kanban":88,"Cadências/Cerimônias":45,"Comunicação":40,"Métricas/Dados":26,"Evolução/Processo":47,"Liderança":9,"Treinamento":7,"Ferramentas":6,"Classes de Serviço":3},"samples":["Downstream/Upstream e a clareza do fluxo de trabalho foram os mais valorizados.","Daily aumenta integração da equipe.","Fluxo, cerimônias, tipos de itens e políticas de acordo.","Kanban e visibilidade das demandas trouxeram organização.","Métricas e previsibilidade melhoraram a gestão."],"count":176},"Risco de regressão":{"themes":{"Comunicação":37,"Evolução/Processo":25,"Fluxo/Kanban":23,"Métricas/Dados":22,"Classes de Serviço":22,"Cadências/Cerimônias":20,"Treinamento":9,"Liderança":7},"samples":["Muitas tarefas urgentes por pessoa podem reverter o processo.","Caso não consigamos mostrar valor ao usuário de negócio.","Falta de continuidade nas retrospectivas.","O framework pode ser adaptado perdendo a essência.","Risco de métricas ficarem sem uso por pressão operacional."],"count":172},"Oportunidades de melhoria":{"themes":{"Evolução/Processo":58,"Comunicação":45,"Métricas/Dados":19,"Fluxo/Kanban":19,"Cadências/Cerimônias":18,"Treinamento":12,"Ferramentas":8,"Liderança":7},"samples":["Definir métodos voltados à realidade do BI.","Mostrar casos reais para melhor entendimento.","Não flexibilizar — padronização entre linhas.","Melhorar ferramentas de acompanhamento.","Capacitação contínua e prática das cerimônias."],"count":168},"Dúvidas e inseguranças":{"themes":{"Comunicação":24,"Evolução/Processo":21,"Fluxo/Kanban":20,"Métricas/Dados":14,"Classes de Serviço":9,"Cadências/Cerimônias":7,"Treinamento":4},"samples":["Classificação das tarefas ainda gera dúvidas.","Mudanças na metodologia que afetam o BI especificamente.","Implementação prática das métricas no dia a dia.","Upstream/Downstream ainda confunde alguns membros.","Insegurança sobre sustentabilidade das práticas no longo prazo."],"count":119}}};
+
+// ─── helpers ───
+const BN=D.block_names,BS=D.block_stats;
+const BC={'Fluxo':'#5b8def','Cerimônias':'#2ec4b6','Métricas':'#25b785','Classes de Serviço':'#f4a322','Governança':'#ef4b57','Valor':'#9d7fef','Sustentabilidade':'#f87c3a'};
+const RC=['#5b8def','#2ec4b6','#f4a322','#25b785'];
+const RS=['Dev/Líder Téc.','Facilitador Ágil','Líder de Linha','PO Adjunto'];
+const RF=Object.keys(D.role_block);
+const cl=v=>v>=4.2?'forte':v>=3.4?'mod':'crit';
+const clL=v=>v>=4.2?'Forte':v>=3.4?'Moderado':'Crítico';
+const clC=v=>v>=4.2?'#25b785':v>=3.4?'#f4a322':'#ef4b57';
+const hmC=v=>{if(!v||isNaN(v))return'#131a24';if(v>=4.5)return'#15803d';if(v>=4.2)return'#4ade80';if(v>=3.8)return'#eab308';if(v>=3.4)return'#f97316';return'#ef4444';};
+const lineArea=l=>{const u=l.toUpperCase();return(u.startsWith('BI')||u.startsWith('GTI'))?'BI':'Transacional';};
+
+Chart.defaults.color='#8895b5';Chart.defaults.borderColor='rgba(255,255,255,0.05)';Chart.defaults.font.family="'Inter',sans-serif";Chart.defaults.font.size=11;
+
+// ─── navigation ───
+const built={};
+function go(id,btn){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('on'));
+  document.querySelectorAll('.sb-item').forEach(n=>n.classList.remove('on'));
+  document.getElementById('page-'+id).classList.add('on');
+  btn.classList.add('on');
+  if(!built[id]){built[id]=true;buildPage(id);}
+}
+function buildPage(id){
+  const map={drill:bDrill,li:bLi,ro:bRo,rd:bRd,rx:bRx,oq:bOq,ins:bIns};
+  if(map[id]) map[id]();
+}
+
+// ─── Filter state ───
+const FIL={line:'',role:'',area:''};
+let avgChart=null,stkChart=null;
+
+function initFil(){
+  const ls=document.getElementById('f-line');
+  D.lines.forEach(l=>{ls.innerHTML+=`<option value="${l}">${l}</option>`;});
+  const rs=document.getElementById('f-role');
+  D.roles.forEach(r=>{rs.innerHTML+=`<option value="${r}">${r.split('/')[0].trim().replace('Desenvolvedor de Sistemas ','Dev / ')}</option>`;});
+}
+
+function applyFil(){
+  FIL.line=document.getElementById('f-line').value;
+  FIL.role=document.getElementById('f-role').value;
+  FIL.area=document.getElementById('f-area').value;
+  renderOv();
+}
+function resetFil(){
+  FIL.line='';FIL.role='';FIL.area='';
+  document.getElementById('f-line').value='';
+  document.getElementById('f-role').value='';
+  document.getElementById('f-area').value='';
+  renderOv();
+}
+
+// Compute filtered data
+function filteredMeans(){
+  // Returns means/dists/count based on active filters
+  let means,dists,cnt,label;
+  if(FIL.line){
+    means=BN.map(b=>D.line_block[FIL.line][b]||0);
+    dists=BN.map(b=>BS[b].dist); // approx - use global dist as line-level dist not stored separately
+    cnt=D.line_counts[FIL.line]||'?';
+    label=FIL.line;
+  } else if(FIL.role){
+    means=BN.map(b=>D.role_block[FIL.role]?D.role_block[FIL.role][b]||0:0);
+    dists=BN.map(b=>BS[b].dist);
+    const rnm=Object.keys(D.role_counts).find(r=>r===FIL.role);
+    cnt=rnm?D.role_counts[rnm]:'?';
+    label=FIL.role.split('/')[0].trim();
+  } else if(FIL.area){
+    means=BN.map(b=>D.area_block[FIL.area]?D.area_block[FIL.area][b]||0:0);
+    dists=BN.map(b=>BS[b].dist);
+    cnt=D.area_counts[FIL.area]||'?';
+    label=FIL.area;
+  } else {
+    means=BN.map(b=>BS[b].mean);
+    dists=BN.map(b=>BS[b].dist);
+    cnt=D.total;
+    label='';
+  }
+  return{means,dists,cnt,label};
+}
+
+function renderOv(){
+  const{means,dists,cnt,label}=filteredMeans();
+  const gs=means.reduce((a,b)=>a+b,0)/BN.length;
+  const ftags=document.getElementById('f-tags');ftags.innerHTML='';
+  const stat=document.getElementById('f-stat');stat.textContent=`${cnt} respondentes`;
+  const tags=[];
+  if(FIL.line) tags.push({v:FIL.line,k:'line'});
+  if(FIL.role) tags.push({v:FIL.role.split('/')[0].trim(),k:'role'});
+  if(FIL.area) tags.push({v:FIL.area,k:'area'});
+  tags.forEach(t=>{ftags.innerHTML+=`<span class="fil-tag">${t.v} <span onclick="clearFil('${t.k}')">✕</span></span>`;});
+
+  // KPIs
+  const kr=document.getElementById('krow-ov');kr.innerHTML='';
+  const kpis=[
+    {l:'Respondentes',v:cnt,c:'k-blue',s:'filtro ativo'},
+    {l:'Score global',v:gs.toFixed(2),c:'k-'+cl(gs),kv:'c-'+cl(gs).replace('forte','green').replace('mod','amber').replace('crit','red'),s:clL(gs)},
+    {l:'Forte ≥4.2',v:means.filter(m=>m>=4.2).length,c:'k-green',s:`de ${BN.length} blocos`},
+    {l:'Moderado 3.4–4.2',v:means.filter(m=>m>=3.4&&m<4.2).length,c:'k-amber',s:'blocos'},
+    {l:'Crítico <3.4',v:means.filter(m=>m<3.4).length,c:'k-red',s:'blocos'},
+    {l:'Maior gap',v:'Sust.',c:'k-purple',s:`${means[6]?means[6].toFixed(2):'–'}`},
+  ];
+  kpis.forEach(k=>{kr.innerHTML+=`<div class="kpi ${k.c}"><div class="kl">${k.l}</div><div class="kv ${k.kv||''}">${k.v}</div><div class="ks">${k.s}</div></div>`;});
+
+  // Block cards
+  const bg=document.getElementById('bcg-ov');bg.innerHTML='';
+  BN.forEach((b,i)=>{
+    const m=means[i]||0,s=BS[b].std,c=cl(m);
+    const note=b==='Sustentabilidade'?' ★':'';
+    bg.innerHTML+=`<div class="bc"><div class="bc-n">${b}${note}</div><div class="bc-s" style="color:${clC(m)}">${m.toFixed(2)}</div><div class="bc-m">σ ${s.toFixed(2)} &nbsp;<span class="bdg ${c}">${clL(m)}</span></div><div class="bc-bar"><div class="bc-fill" style="width:${(m/5*100).toFixed(0)}%;background:${clC(m)}"></div></div></div>`;
+  });
+
+  // Charts
+  if(avgChart){avgChart.destroy();avgChart=null;}
+  avgChart=new Chart(document.getElementById('c-avg'),{type:'bar',data:{labels:BN,datasets:[{data:means,backgroundColor:means.map(m=>clC(m)),borderRadius:5}]},
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>`Score: ${ctx.raw.toFixed(2)} — ${clL(ctx.raw)}`}}},
+    scales:{x:{grid:{display:false},ticks:{color:'#8895b5',font:{size:11}}},y:{min:1,max:5,grid:{color:'rgba(255,255,255,.04)'},ticks:{color:'#8895b5'}}}},
+    plugins:[{id:'rl',afterDraw(ch){const{ctx,chartArea:{left,right},scales:{y}}=ch;[[3.4,'#ef4b57','Crítico'],[4.2,'#25b785','Forte']].forEach(([v,c,lbl])=>{const yp=y.getPixelForValue(v);ctx.save();ctx.setLineDash([4,3]);ctx.strokeStyle=c;ctx.globalAlpha=.45;ctx.lineWidth=1.1;ctx.beginPath();ctx.moveTo(left,yp);ctx.lineTo(right,yp);ctx.stroke();ctx.fillStyle=c;ctx.globalAlpha=.8;ctx.font='9px Inter';ctx.fillText(lbl,right-30,yp-3);ctx.restore();});}}]});
+
+  if(stkChart){stkChart.destroy();stkChart=null;}
+  stkChart=new Chart(document.getElementById('c-stk'),{type:'bar',data:{labels:BN,datasets:[
+    {label:'Discordo tot.',data:BN.map((b,i)=>dists[i].dt),backgroundColor:'#ef4b57'},
+    {label:'Discordo parc.',data:BN.map((b,i)=>dists[i].dp),backgroundColor:'#f87c3a'},
+    {label:'Neutro',data:BN.map((b,i)=>dists[i].n),backgroundColor:'#64748b'},
+    {label:'Concordo parc.',data:BN.map((b,i)=>dists[i].cp),backgroundColor:'#5b8def'},
+    {label:'Concordo tot.',data:BN.map((b,i)=>dists[i].ct),backgroundColor:'#25b785'},
+  ]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>ctx.dataset.label+': '+ctx.raw+'%'}}},
+  scales:{x:{stacked:true,grid:{display:false},ticks:{color:'#8895b5',font:{size:10}}},y:{stacked:true,max:100,grid:{color:'rgba(255,255,255,.04)'},ticks:{color:'#8895b5',callback:v=>v+'%'}}}}});
+}
+
+function clearFil(k){FIL[k]='';document.getElementById('f-'+k).value='';renderOv();}
+
+// ─── DRILL-DOWN ───
+function bDrill(){
+  const sorted=D.q_means.map((m,i)=>({m,i,q:D.q_short[i],b:D.q_block_map[i]})).sort((a,b)=>a.m-b.m);
+  sorted.slice(0,5).forEach(x=>{document.getElementById('d-crit').innerHTML+=`<li class="ri"><span class="rn" style="font-size:11px">${x.q} <span style="font-size:10px;color:var(--tx3)">[${x.b}]</span></span><span class="rscore" style="color:${clC(x.m)}">${x.m.toFixed(2)}</span></li>`;});
+  sorted.slice(-5).reverse().forEach(x=>{document.getElementById('d-strong').innerHTML+=`<li class="ri"><span class="rn" style="font-size:11px">${x.q} <span style="font-size:10px;color:var(--tx3)">[${x.b}]</span></span><span class="rscore" style="color:${clC(x.m)}">${x.m.toFixed(2)}</span></li>`;});
+  const lg=document.getElementById('d-leg');
+  BN.forEach(b=>{lg.innerHTML+=`<span class="leg-i"><span class="leg-sq" style="background:${BC[b]}"></span>${b}</span>`;});
+  new Chart(document.getElementById('c-drill'),{type:'bar',data:{labels:D.q_short,datasets:[{data:D.q_means,backgroundColor:D.q_block_map.map(b=>BC[b]+'cc'),borderRadius:3}]},
+    options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>`Score: ${ctx.raw.toFixed(2)} — ${D.q_block_map[ctx.dataIndex]}`}}},
+    scales:{x:{min:1,max:5,grid:{color:'rgba(255,255,255,.04)'},ticks:{color:'#8895b5'}},y:{grid:{display:false},ticks:{color:'#8895b5',font:{size:10}}}}}});
+}
+
+// ─── LINHAS ───
+function bLi(){
+  const sorted=Object.entries(D.line_overall).sort((a,b)=>b[1]-a[1]);
+  new Chart(document.getElementById('c-li'),{type:'bar',data:{labels:sorted.map(x=>x[0]),datasets:[{data:sorted.map(x=>+x[1].toFixed(2)),backgroundColor:sorted.map(x=>clC(x[1])),borderRadius:4}]},
+    options:{indexAxis:'y',responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>`Score: ${ctx.raw.toFixed(2)} — ${clL(ctx.raw)}`}}},
+    scales:{x:{min:2.5,max:5.1,grid:{color:'rgba(255,255,255,.04)'},ticks:{color:'#8895b5'}},y:{grid:{display:false},ticks:{color:'#8895b5',font:{size:11}}}}}});
+  sorted.slice(0,3).forEach(([l,v],i)=>{document.getElementById('li-best').innerHTML+=`<li class="ri"><span class="rn">${i+1}. ${l} <span class="bdg ${cl(v)}" style="font-size:9px">${lineArea(l)}</span></span><span class="rscore" style="color:var(--green)">${v.toFixed(2)}</span></li>`;});
+  sorted.slice(-3).reverse().forEach(([l,v],i)=>{document.getElementById('li-worst').innerHTML+=`<li class="ri"><span class="rn">${i+1}. ${l} <span class="bdg ${cl(v)}" style="font-size:9px">${lineArea(l)}</span></span><span class="rscore" style="color:var(--red)">${v.toFixed(2)}</span></li>`;});
+  const lcs=Object.entries(D.line_counts).sort((a,b)=>b[1]-a[1]).slice(0,10);
+  new Chart(document.getElementById('c-lct'),{type:'bar',data:{labels:lcs.map(x=>x[0]),datasets:[{data:lcs.map(x=>x[1]),backgroundColor:'#5b8def88',borderRadius:3}]},
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{x:{grid:{display:false},ticks:{color:'#8895b5',font:{size:10}}},y:{grid:{color:'rgba(255,255,255,.04)'},ticks:{color:'#8895b5'}}}}});
+  // Heatmap
+  let h=`<table class="hmt"><thead><tr><th class="hmhr">Linha</th>`;
+  BN.forEach(b=>h+=`<th class="hmh">${b.replace('Classes de Serviço','Cl.Serv.').replace('Sustentabilidade','Sust.★')}</th>`);
+  h+=`<th class="hmh">Global</th></tr></thead><tbody>`;
+  sorted.forEach(([l,ov])=>{h+=`<tr><td class="hmhr">${l}</td>`;BN.forEach(b=>{const v=D.line_block[l][b];h+=`<td class="hmtd"><div class="hmc" style="background:${hmC(v)}">${v?v.toFixed(1):'–'}</div></td>`;});h+=`<td class="hmtd"><div class="hmc" style="background:${clC(ov)};font-weight:700">${ov.toFixed(2)}</div></td></tr>`;});
+  h+=`</tbody></table>`;
+  document.getElementById('li-hm').innerHTML=h;
+}
+
+// ─── PAPÉIS ───
+function bRo(){
+  const lg=document.getElementById('ro-leg');
+  RS.forEach((r,i)=>{lg.innerHTML+=`<span class="leg-i"><span class="leg-sq" style="background:${RC[i]}"></span>${r}</span>`;});
+  new Chart(document.getElementById('c-ro'),{type:'bar',data:{labels:BN,datasets:RF.map((r,i)=>({label:RS[i],data:BN.map(b=>D.role_block[r][b]),backgroundColor:RC[i]+'bb',borderRadius:3}))},
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>ctx.dataset.label+': '+ctx.raw.toFixed(2)}}},
+    scales:{x:{grid:{display:false},ticks:{color:'#8895b5',font:{size:10}}},y:{min:1,max:5,grid:{color:'rgba(255,255,255,.04)'},ticks:{color:'#8895b5'}}}}});
+  new Chart(document.getElementById('c-rct'),{type:'doughnut',data:{labels:RS,datasets:[{data:RF.map(r=>D.role_counts[r]),backgroundColor:RC,borderColor:'#07090f',borderWidth:2}]},
+    options:{responsive:true,maintainAspectRatio:false,cutout:'65%',plugins:{legend:{position:'right',labels:{color:'#8895b5',boxWidth:9,font:{size:10},padding:8}}}}});
+  RF.forEach((r,i)=>{const ov=D.role_overall[r];document.getElementById('ro-scores').innerHTML+=`<div class="ri"><span class="rn">${RS[i]} <span style="font-size:10px;color:var(--tx3)">(${D.role_counts[r]})</span></span><span class="rscore bdg ${cl(ov)}">${ov.toFixed(2)}</span></div>`;});
+  const dev=D.role_block[RF[0]],ldr=D.role_block[RF[2]];
+  const gc=document.getElementById('ro-gap');
+  BN.forEach(b=>{const g=ldr[b]-dev[b],fl=Math.abs(g)>=0.5;const bg=fl?(g>0?'rgba(239,75,87,.1)':'rgba(37,183,133,.1)'):'rgba(255,255,255,.04)';const tc=fl?(g>0?'var(--red)':'var(--green)'):'var(--tx3)';gc.innerHTML+=`<div class="gc" style="background:${bg}"><div class="gl">${b}</div><div class="gv" style="color:${tc}">${g>0?'+':''}${g.toFixed(2)}</div><div class="gn" style="color:${tc}">${fl?(g>0?'⚠ Líder + otimista':'↑ Dev + positivo'):''}</div></div>`;});
+}
+
+// ─── RADAR ───
+function bRd(){
+  const RL=['Fluxo','Cerimônias','Métricas','Cl.Serv.','Governança','Valor','Sust.★'];
+  const rOpts={responsive:true,maintainAspectRatio:false,scales:{r:{min:1,max:5,ticks:{stepSize:1,color:'#495570',backdropColor:'transparent',font:{size:9}},pointLabels:{color:'#8895b5',font:{size:10}},grid:{color:'rgba(255,255,255,.06)'},angleLines:{color:'rgba(255,255,255,.06)'}}}};
+  new Chart(document.getElementById('c-rd1'),{type:'radar',data:{labels:RL,datasets:[{label:'Global',data:BN.map(b=>BS[b].mean),backgroundColor:'rgba(91,141,239,.18)',borderColor:'#5b8def',pointBackgroundColor:'#5b8def',borderWidth:2,pointRadius:4}]},options:{...rOpts,plugins:{legend:{display:false}}}});
+  const lg=document.getElementById('rd-leg');
+  RS.forEach((r,i)=>{lg.innerHTML+=`<span class="leg-i"><span class="leg-sq" style="background:${RC[i]}"></span>${r}</span>`;});
+  new Chart(document.getElementById('c-rd2'),{type:'radar',data:{labels:RL,datasets:RF.map((r,i)=>({label:RS[i],data:BN.map(b=>D.role_block[r][b]),backgroundColor:'transparent',borderColor:RC[i],pointBackgroundColor:RC[i],borderWidth:2,pointRadius:3}))},options:{...rOpts,plugins:{legend:{labels:{color:'#8895b5',boxWidth:9,font:{size:10},padding:8}}}}});
+}
+
+// ─── MATRIZ RISCO ───
+function bRx(){
+  const IMP={Fluxo:4.5,Cerimônias:3.5,Métricas:5.0,'Classes de Serviço':3.0,Governança:4.0,Valor:4.5,Sustentabilidade:5.0};
+  new Chart(document.getElementById('c-rx'),{type:'bubble',
+    data:{datasets:BN.map((b,i)=>({label:b,data:[{x:BS[b].mean,y:IMP[b],r:BS[b].std*12+5}],backgroundColor:Object.values(BC)[i]+'88',borderColor:Object.values(BC)[i],borderWidth:2}))},
+    options:{responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{labels:{color:'#8895b5',boxWidth:9,font:{size:10},padding:8}},tooltip:{callbacks:{label:ctx=>`${ctx.dataset.label} | Maturidade: ${ctx.raw.x.toFixed(2)} | Impacto: ${ctx.raw.y} | σ: ${BS[ctx.dataset.label].std.toFixed(2)}`}}},
+      scales:{x:{min:1.5,max:5.5,title:{display:true,text:'← Maturidade (score médio) →',color:'#8895b5'},grid:{color:'rgba(255,255,255,.04)'},ticks:{color:'#8895b5'}},y:{min:2,max:5.8,title:{display:true,text:'↑ Impacto organizacional',color:'#8895b5'},grid:{color:'rgba(255,255,255,.04)'},ticks:{color:'#8895b5'}}},
+      plugins:[{id:'q',afterDraw(ch){const{ctx,chartArea:{top,bottom},scales:{x}}=ch;const xp=x.getPixelForValue(3.4);ctx.save();ctx.setLineDash([4,3]);ctx.strokeStyle='#ef4b57';ctx.globalAlpha=.4;ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(xp,top);ctx.lineTo(xp,bottom);ctx.stroke();ctx.fillStyle='#ef4b57';ctx.globalAlpha=.7;ctx.font='9px Inter';ctx.fillText('← Crítico',xp-44,top+12);ctx.restore();}}]}});
+  const sorted=Object.entries(D.line_overall).sort((a,b)=>b[1]-a[1]);
+  sorted.slice(0,3).forEach(([l,v],i)=>{document.getElementById('rx-best').innerHTML+=`<li class="ri"><span class="rn">${i+1}. ${l}</span><span class="rscore" style="color:var(--green)">${v.toFixed(2)}</span></li>`;});
+  sorted.slice(-3).reverse().forEach(([l,v],i)=>{document.getElementById('rx-worst').innerHTML+=`<li class="ri"><span class="rn">${i+1}. ${l}</span><span class="rscore" style="color:var(--red)">${v.toFixed(2)}</span></li>`;});
+  const sigs=[{c:'red',t:'🔴 Sustentabilidade + alto impacto = prioridade máxima',d:'Score 3.06 com impacto 5.0. Bloco 9 normalizado ainda moderado-baixo. Risco de regressão sistêmica real.'},{c:'amber',t:'🟡 Teatro ágil — Cerimônias (4.25) > Métricas (4.03)',d:'Cadências ocorrem mas dados não guiam decisões. Qualitativo confirma: métricas são risco de regressão #1.'},{c:'blue',t:'🔵 Classes de Serviço: moderado com maior dispersão',d:'Score 3.83, maior σ do sistema (1.11). Compreensão heterogênea entre linhas — risco de uso incorreto.'},{c:'green',t:'✓ Base estrutural sólida: Governança + Valor + Fluxo',d:'3 blocos com score forte (≥4.2). Papéis, processos e entregas reconhecidos como positivos pela organização.'}];
+  document.getElementById('rx-sigs').innerHTML=sigs.map(s=>`<div class="sig ${s.c}"><div class="sig-t">${s.t}</div><div class="sig-d">${s.d}</div></div>`).join('');
+}
+
+// ─── QUALITATIVO ───
+function bOq(){
+  const icons={'Geração de valor':'💎','Risco de regressão':'⚠️','Oportunidades de melhoria':'🔧','Dúvidas e inseguranças':'❓'};
+  const colors={'Geração de valor':'#25b785','Risco de regressão':'#ef4b57','Oportunidades de melhoria':'#5b8def','Dúvidas e inseguranças':'#f4a322'};
+  const tclrs={'Fluxo/Kanban':'#5b8def','Cadências/Cerimônias':'#2ec4b6','Métricas/Dados':'#25b785','Comunicação':'#9d7fef','Evolução/Processo':'#f4a322','Classes de Serviço':'#ef4b57','Treinamento':'#f87c3a','Liderança':'#e879a0','Ferramentas':'#64748b'};
+  let html='';
+  Object.entries(D.open_q).forEach(([lbl,data])=>{
+    const maxV=Math.max(...Object.values(data.themes));
+    html+=`<div class="card" style="margin-bottom:13px"><div class="ct"><span class="cdot" style="background:${colors[lbl]}"></span>${icons[lbl]} ${lbl} <span style="font-weight:400;color:var(--tx3)">(${data.count} respostas)</span></div>`;
+    html+=`<div class="g2">`;
+    html+=`<div><div style="font-size:10px;font-weight:700;color:var(--tx3);text-transform:uppercase;letter-spacing:.07em;margin-bottom:9px">Temas frequentes</div>`;
+    Object.entries(data.themes).slice(0,6).forEach(([th,cnt])=>{const pct=Math.round(cnt/maxV*100);html+=`<div style="display:flex;align-items:center;justify-content:space-between;padding:5px 9px;border-radius:var(--rs);margin-bottom:4px;background:var(--bg3)"><span style="font-size:12px">${th}</span><span class="bdg mod">${cnt}</span></div><div class="oq-bar"><div class="oq-fill" style="width:${pct}%;background:${tclrs[th]||'#5b8def'}"></div></div>`;});
+    html+=`</div><div><div style="font-size:10px;font-weight:700;color:var(--tx3);text-transform:uppercase;letter-spacing:.07em;margin-bottom:9px">Exemplos anônimos</div>`;
+    data.samples.slice(0,4).forEach(s=>{html+=`<div class="oq-sample">"${s}"</div>`;});
+    html+=`</div></div></div>`;
+  });
+  document.getElementById('oq-wrap').innerHTML=html;
+}
+
+// ─── INSIGHTS ───
+function bIns(){
+  const items={
+    'ins-i':['Governança (4.29) e Valor (4.27) são os pontos mais sólidos da organização — papéis e entregas reconhecidos positivamente.','Daily é a prática mais consolidada: score 4.85, 90.5% concordam totalmente — ancoragem do framework no dia a dia.','Sustentabilidade normalizada: 3.06. Bloco 9 mede resiliência do sistema. Ainda moderado-baixo — risco de abandono presente.','Teatro ágil confirmado: Cerimônias (4.25) acima de Métricas (4.03). Análise qualitativa reforça: métricas são o principal risco percebido.','Dependência de pessoas: Q44 = 2.51 — o score mais baixo do diagnóstico. Concentração de conhecimento em etapas críticas do fluxo.'],
+    'ins-r':['TRSPTE: score 3.38 — único abaixo de 3.4. Métricas em 2.77 e Sustentabilidade em 2.41. Risco iminente de colapso operacional.','Sustentabilidade Transacional: 2.99 — abaixo de 3.0. 35% discordam que os riscos estão controlados. Regressão provável sem intervenção.','Desalinhamento STES: Líder (4.57) vs Dev (3.63), gap de 0.94. Gestão com visão muito mais positiva que a operação.','Classes de Serviço com maior dispersão (σ=1.11): uso inconsistente de Expedite e priorização entre linhas cria conflitos.','PDCOOP (3.49): todas as 7 dimensões abaixo de 4.0. Fragilidade sistêmica generalizada sem ponto forte identificado.'],
+    'ins-o':['Replicar práticas de BIALIM (4.84) e BIAC (4.70) para TRSPTE e PDCOOP — benchmark interno imediato e concreto.','Conectar dados às cerimônias: criar rotina de revisão de métricas na Daily ou Retrospectiva combate o teatro ágil identificado.','Mapear e distribuir conhecimento crítico: identificar etapas com concentração de pessoas (Q44=2.51) e criar redundância.','Capacitar Classes de Serviço em PDCOOP (3.14), TRSPTE (3.11) e COFT (3.0) — os três menores scores nessa dimensão.','Padronizar o framework entre linhas: análise qualitativa sinaliza que adaptações por linha comprometem a essência do método.']
+  };
+  Object.entries(items).forEach(([id,arr])=>{document.getElementById(id).innerHTML=arr.map((t,i)=>`<li class="ii"><span class="inum">0${i+1}</span><span class="itxt">${t}</span></li>`).join('');});
+  document.getElementById('ins-pt').innerHTML=[
+    {n:1,a:'Sustentabilidade em TRSPTE, LOGBF, BITR — intervenção urgente',u:'Crítico',c:'crit'},
+    {n:2,a:'Dependência de pessoas (Q44=2.51) — mapeamento e redistribuição',u:'Crítico',c:'crit'},
+    {n:3,a:'Desalinhamento STES: alinhar percepção Líder × Dev (gap 0.94)',u:'Alto',c:'mod'},
+    {n:4,a:'Classes de Serviço em PDCOOP/TRSPTE/COFT — capacitação',u:'Alto',c:'mod'},
+    {n:5,a:'Métricas: conectar dados às cerimônias (anti-teatro ágil)',u:'Médio',c:'mod'},
+    {n:6,a:'Preservar Governança e Valor — manutenção sem intervenção',u:'Baixo',c:'forte'},
+  ].map(r=>`<tr><td style="font-family:'JetBrains Mono',monospace;color:var(--tx3)">${r.n}</td><td>${r.a}</td><td><span class="bdg ${r.c}">${r.u}</span></td></tr>`).join('');
+  document.getElementById('ins-pat').innerHTML=[
+    {c:'amber',t:'🎭 Teatro ágil',d:'Cerimônias (4.25) > Métricas (4.03) em 0.22 pts. Qualitativo confirma: fluxo/cerimônias são os mais valorizados, mas métricas emergem como principal risco percebido de regressão.'},
+    {c:'red',t:'⚠ Risco de regressão do sistema',d:'Sustentabilidade: 3.06. Abaixo de 3.4 = sinal de alerta. TRSPTE (2.41), BITR (2.25), LOGBF (2.33) em zona crítica. Qualitativo: "urgentes" mencionadas 22x como fator de risco.'},
+    {c:'blue',t:'👁 Desalinhamento cultural entre papéis',d:'Líderes de Linha avaliam +0.27 acima dos Devs em Fluxo, +0.13 em Métricas, +0.29 em Sustentabilidade. Em STES, o gap chega a 0.94 — risco de gestão desconectada da realidade operacional.'},
+    {c:'green',t:'✓ Maturidade real parcial — 6 de 7 blocos ≥3.4',d:'Base estrutural presente. Fluxo, Cerimônias, Governança e Valor são fortes. O sistema funciona — o desafio é sustentar as práticas no longo prazo sem depender de pessoas-chave.'},
+    {c:'purple',t:'🧠 Concentração de expertise nos Facilitadores',d:'Facilitadores Ágeis (n=3) têm percepção 0.4–0.8 pts acima dos Devs em média. O sistema funciona bem onde há facilitação ativa. Risco: o framework é muito dependente de poucos papéis.'},
+  ].map(s=>`<div class="sig ${s.c}" style="margin-bottom:8px"><div class="sig-t">${s.t}</div><div class="sig-d">${s.d}</div></div>`).join('');
+}
+
+// ─── INIT ───
+window.addEventListener('load',()=>{
+  initFil();
+  renderOv();
+});
+</script>
+</body>
+</html>
